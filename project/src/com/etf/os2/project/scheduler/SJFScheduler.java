@@ -1,6 +1,5 @@
 package com.etf.os2.project.scheduler;
 
-import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -36,16 +35,6 @@ public class SJFScheduler extends Scheduler {
 		}
 	}
 	
-	private class PcbComparator implements Comparator<Pcb> {
-
-		@Override
-		public int compare(Pcb firstPcb, Pcb secondPcb) {
-			return Double.compare(
-					((SJFData) firstPcb.getPcbData()).getPrediction(),
-					((SJFData) secondPcb.getPcbData()).getPrediction());
-		}
-	}
-	
 	private double alpha;
 	private boolean preemption;
 	private Queue<Pcb> queue;
@@ -55,16 +44,25 @@ public class SJFScheduler extends Scheduler {
 		if (alpha > 1) alpha = 1;
 		this.alpha = alpha;
 		this.preemption = preemption;
-		PcbComparator pcbComparator = new PcbComparator();
-		queue = new PriorityQueue<Pcb>(pcbComparator);
+		queue = new PriorityQueue<Pcb>((x, y) -> {
+		    return Double.compare(
+                    ((SJFData) x.getPcbData()).getPrediction(),
+                    ((SJFData) y.getPcbData()).getPrediction());
+		    });
 	}
 
 	@Override
 	public Pcb get(int cpuId) {
 		Pcb nextPcb = queue.poll();
-		if (nextPcb == null) return Pcb.IDLE;
-		SJFData data = (SJFData) nextPcb.getPcbData();
-		data.setStartTime();
+		double prediction = 0;
+        if (nextPcb == null) {
+            nextPcb = Pcb.IDLE;
+        } else {
+            SJFData data = (SJFData) nextPcb.getPcbData();
+            data.setStartTime();
+            prediction = data.prediction;
+        }
+        System.out.println("GET CPU" + cpuId + " prediction = " + prediction + ": " + nextPcb.getId());
 		return nextPcb;
 	}
 
@@ -74,10 +72,9 @@ public class SJFScheduler extends Scheduler {
 		SJFData data = (SJFData) pcb.getPcbData();
 		
 		long executionTime = pcb.getExecutionTime();
-		double prediction = 0;
+		double prediction = 10 * pcb.getPriority();
 		
 		if (prevState == ProcessState.CREATED) {
-			prediction = pcb.getPriority();
 			pcb.setPcbData(data = new SJFData(prediction));
 		} else {
 			prediction = data.getPrediction();
@@ -86,17 +83,27 @@ public class SJFScheduler extends Scheduler {
 		prediction = alpha * executionTime + (1 - alpha) * prediction;
 		data.setPrediction(prediction);
 		
-		if (preemption) {
-			// try preempt a process and start this one
-			double maxRemaining = Double.MIN_VALUE;
-			for (int i = 0; i < Pcb.RUNNING.length; i++) {
-				SJFData tempData = (SJFData) Pcb.RUNNING[i].getPcbData();
-				double tempPrediction = tempData.prediction;
-			}
-		}
-		
 		queue.offer(pcb);
 		pcb.setTimeslice(0);
-//		System.out.print("PUT " + priority + ": " + pcb);
+
+        System.out.println("PUT prediction = " + prediction + ": " + pcb.getId());
+		
+        if (preemption) {
+            double maxRemaining = Double.MIN_VALUE;
+            int preemptCpu = -1;
+            for (int i = 0; i < Pcb.RUNNING.length; i++) {
+                if (Pcb.RUNNING[i] == Pcb.IDLE) continue;
+                SJFData tempData = (SJFData) Pcb.RUNNING[i].getPcbData();
+                double timeLeft = tempData.prediction - tempData.getCurrentExecutionTime();
+                if (timeLeft > maxRemaining) {
+                    maxRemaining = timeLeft;
+                    preemptCpu = i;
+                }
+            }
+            if (preemptCpu > -1) {
+                Pcb.RUNNING[preemptCpu].preempt();
+                System.out.println("Preempting CPU" + preemptCpu + "!");
+            }
+        }
     }
 }

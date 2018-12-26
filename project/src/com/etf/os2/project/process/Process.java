@@ -275,7 +275,7 @@ public class Process {
         return processCount;
     }
 
-    public void writeResults() {
+    public double writeResults() {
         StringBuilder ret = new StringBuilder(
                 String.format("Process id=%d priority=%d ", pcb.getId(), pcb.getPriority()));
         ret.append(String.format("ExpectedExecutionTime=%d ExecutionTime=%d ", stats.getExpectedExecutionTime(),
@@ -283,5 +283,8 @@ public class Process {
         ret.append(String.format("ResponseTime=%d ", stats.getResponseTime()));
 
         System.out.println(ret);
+        
+        // TODO: remove this after testing...
+        return stats.getResponseTime();
     }
 }

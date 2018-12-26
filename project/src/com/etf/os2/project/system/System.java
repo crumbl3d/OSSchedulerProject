@@ -47,9 +47,16 @@ public class System {
             finishProcesses();
         }
 
+        // TODO: restore this after testing
+        double avgTime = 0;
+        
         for (Process proc : finishedProcess) {
-            proc.writeResults();
+            avgTime += proc.writeResults();
         }
+
+        avgTime /= finishedProcess.size();
+        
+        java.lang.System.out.println("Average response time: " + avgTime);
     }
 
     private void finishProcesses() {

@@ -40,7 +40,7 @@ public class MFQScheduler extends Scheduler {
 			if (nextPcb != null) break;
 		}
 		if (nextPcb == null) nextPcb = Pcb.IDLE;
-//		System.out.println("GET CPU" + cpuId + ": " + nextPcb);
+//		System.out.println("GET CPU" + cpuId + ": " + nextPcb.getId());
 		return nextPcb;
 	}
 
@@ -54,16 +54,16 @@ public class MFQScheduler extends Scheduler {
 				data.priority = numberOfQueues - 1;
 			}
 		} else if (prevState == ProcessState.BLOCKED) {
-			if (data.priority < numberOfQueues - 1) {
-				data.priority++;
-			}
+            if (data.priority > 0) {
+                data.priority--;
+            }
 		} else {
-			if (data.priority > 0) {
-				data.priority--;
-			}
+            if (data.priority < numberOfQueues - 1) {
+                data.priority++;
+            }
 		}
 		queues[data.priority].offer(pcb);
 		pcb.setTimeslice(timeslices[data.priority]);
-//		System.out.println("PUT " + data.priority + ": " + pcb);
+//		System.out.println("PUT " + data.priority + ": " + pcb.getId());
 	}
 }
