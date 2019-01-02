@@ -25,7 +25,7 @@ public abstract class Scheduler {
             int numberOfQueues = Integer.parseInt(args[1]);
             if (args.length - 2 < numberOfQueues)
                 return null;
-            long timeslices[] = new long[numberOfQueues];
+            long[] timeslices = new long[numberOfQueues];
             for (int i = 0; i < numberOfQueues; i++) {
                 timeslices[i] = Long.parseLong(args[2 + i]);
             }

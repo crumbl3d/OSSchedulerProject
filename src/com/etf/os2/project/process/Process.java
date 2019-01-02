@@ -146,7 +146,6 @@ public class Process {
         length = lengthGenerator.getNext();
     }
 
-
     public long getNextEventTime() {
         if (isPreempt()) {
             return time + 1;

@@ -13,22 +13,22 @@ public class MFQScheduler extends Scheduler {
 
 		private int priority;
 		
-		public MFQData(int priority) {
+		MFQData(int priority) {
 			this.priority = priority;
 		}
 	}
 	
 	private int numberOfQueues;
-	private long timeslices[];
-	private Queue<Pcb> queues[];
+	private long[] timeslices;
+	private Queue<Pcb>[] queues;
 
 	@SuppressWarnings("unchecked")
-	public MFQScheduler(int numberOfQueues, long timeslices[]) {
+	MFQScheduler(int numberOfQueues, long[] timeslices) {
 		this.numberOfQueues = numberOfQueues;
 		this.timeslices = timeslices;
 		queues = new Queue[numberOfQueues];
 		for (int i = 0; i < numberOfQueues; i++) {
-			queues[i] = new LinkedList<Pcb>();
+			queues[i] = new LinkedList<>();
 		}
 	}
 

@@ -1,5 +1,6 @@
 package com.etf.os2.project.scheduler;
 
+import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -14,23 +15,23 @@ public class SJFScheduler extends Scheduler {
 		private double prediction;
 		private double startTime;
 
-		public SJFData(double prediction) {
+		SJFData(double prediction) {
 			this.prediction = prediction;
 		}
 
-		public double getPrediction() {
+		double getPrediction() {
 			return prediction;
 		}
 
-		public void setPrediction(double prediction) {
+		void setPrediction(double prediction) {
 			this.prediction = prediction;
 		}
 		
-		public void setStartTime() {
+		void setStartTime() {
 			this.startTime = Pcb.getCurrentTime();
 		}
 		
-		public double getCurrentExecutionTime() {
+		double getCurrentExecutionTime() {
 			return Pcb.getCurrentTime() - startTime;
 		}
 	}
@@ -39,16 +40,12 @@ public class SJFScheduler extends Scheduler {
 	private boolean preemption;
 	private Queue<Pcb> queue;
 	
-	public SJFScheduler(double alpha, boolean preemption) {
+	SJFScheduler(double alpha, boolean preemption) {
 		if (alpha < 0) alpha = 0;
 		if (alpha > 1) alpha = 1;
 		this.alpha = alpha;
 		this.preemption = preemption;
-		queue = new PriorityQueue<Pcb>((x, y) -> {
-		    return Double.compare(
-                    ((SJFData) x.getPcbData()).getPrediction(),
-                    ((SJFData) y.getPcbData()).getPrediction());
-		    });
+		queue = new PriorityQueue<>(Comparator.comparingDouble(x -> ((SJFData) x.getPcbData()).getPrediction()));
 	}
 
 	@Override
