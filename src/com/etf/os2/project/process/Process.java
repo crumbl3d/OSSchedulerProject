@@ -41,7 +41,7 @@ public class Process {
     private final List<Request> requests = new ArrayList<Request>();
     private Request currentRequest = null;
     private Pcb.ProcessState state = Pcb.ProcessState.CREATED;
-    private ProcessStats stats;
+    public ProcessStats stats;
 
     public Process(int id, int priority, ProcessType processType, ProcessLength processLength) {
         pcb = new Pcb(id, priority);
@@ -274,7 +274,7 @@ public class Process {
         return processCount;
     }
 
-    public double writeResults() {
+    public void writeResults() {
         StringBuilder ret = new StringBuilder(
                 String.format("Process id=%d priority=%d ", pcb.getId(), pcb.getPriority()));
         ret.append(String.format("ExpectedExecutionTime=%d ExecutionTime=%d ", stats.getExpectedExecutionTime(),
@@ -282,8 +282,5 @@ public class Process {
         ret.append(String.format("ResponseTime=%d ", stats.getResponseTime()));
 
         System.out.println(ret);
-        
-        // TODO: remove this after testing...
-        return stats.getResponseTime();
     }
 }

@@ -48,15 +48,25 @@ public class System {
         }
 
         // TODO: restore this after testing
-        double avgTime = 0;
+        double avgResponseTime = 0;
+        double minResponseTime = Double.MAX_VALUE;
+        double maxResponseTime = Double.MIN_VALUE;
         
         for (Process proc : finishedProcess) {
-            avgTime += proc.writeResults();
+            proc.writeResults();
+            avgResponseTime += proc.stats.getResponseTime();
+            if (proc.stats.getResponseTime() < minResponseTime)
+                minResponseTime = proc.stats.getResponseTime();
+            if (proc.stats.getResponseTime() > maxResponseTime)
+                maxResponseTime = proc.stats.getResponseTime();
         }
 
-        avgTime /= finishedProcess.size();
-        
-        java.lang.System.out.println("Average response time: " + avgTime);
+        avgResponseTime /= finishedProcess.size();
+
+        java.lang.System.out.println("Min response time: " + minResponseTime);
+        java.lang.System.out.println("Max response time: " + maxResponseTime);
+        java.lang.System.out.println("Average response time: " + avgResponseTime);
+        java.lang.System.out.println("System execution time: " + time);
     }
 
     private void finishProcesses() {
