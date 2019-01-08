@@ -9,61 +9,62 @@ import java.util.Queue;
 
 public class MFQScheduler extends Scheduler {
 
-	private class MFQData extends PcbData {
+    private class MFQSData extends PcbData {
 
-		private int priority;
-		
-		MFQData(int priority) {
-			this.priority = priority;
-		}
-	}
-	
-	private int numberOfQueues;
-	private long[] timeslices;
-	private Queue<Pcb>[] queues;
+        int priority;
 
-	@SuppressWarnings("unchecked")
-	MFQScheduler(int numberOfQueues, long[] timeslices) {
-		this.numberOfQueues = numberOfQueues;
-		this.timeslices = timeslices;
-		queues = new Queue[numberOfQueues];
-		for (int i = 0; i < numberOfQueues; i++) {
-			queues[i] = new LinkedList<>();
-		}
-	}
+        MFQSData(int priority) { this.priority = priority; }
+    }
 
-	@Override
-	public Pcb get(int cpuId) {
-		Pcb nextPcb = null;
-		for (int i = 0; i < numberOfQueues; i++) {
-			nextPcb = queues[i].poll();
-			if (nextPcb != null) break;
-		}
-		if (nextPcb == null) nextPcb = Pcb.IDLE;
-//		System.out.println("GET CPU" + cpuId + ": " + nextPcb.getId());
-		return nextPcb;
-	}
+    private int queueCount;
+    private long[] timeslices;
+    private Queue<Pcb>[] queues;
 
-	@Override
-	public void put(Pcb pcb) {
-		ProcessState prevState = pcb.getPreviousState();
-		MFQData data = (MFQData) pcb.getPcbData();
-		if (prevState == ProcessState.CREATED) {
-			pcb.setPcbData(data = new MFQData(pcb.getPriority()));
-			if (data.priority >= numberOfQueues) {
-				data.priority = numberOfQueues - 1;
-			}
-		} else if (prevState == ProcessState.BLOCKED) {
+    @SuppressWarnings("unchecked")
+    MFQScheduler(int queueCount, long[] timeslices) {
+        this.queueCount = queueCount;
+        this.timeslices = timeslices;
+        queues = new Queue[queueCount];
+        for (int i = 0; i < queueCount; i++) {
+            queues[i] = new LinkedList<>();
+        }
+    }
+
+    @Override
+    public Pcb get(int cpuId) {
+        Pcb pcb = null;
+        for (Queue<Pcb> queue : queues) {
+            pcb = queue.poll();
+            if (pcb != null) break;
+        }
+        if (pcb != null) {
+            MFQSData data = (MFQSData) pcb.getPcbData();
+            pcb.setTimeslice(timeslices[data.priority]);
+//            System.out.println("GET CPU" + cpuId + " timeslice = " + pcb.getTimeslice() + ": " + pcb.getId());
+//        } else {
+//            System.out.println("GET CPU" + cpuId + ": IDLE");
+        }
+        return pcb;
+    }
+
+    @Override
+    public void put(Pcb pcb) {
+        MFQSData data = (MFQSData) pcb.getPcbData();
+        if (pcb.getPreviousState() == ProcessState.CREATED) {
+            pcb.setPcbData(data = new MFQSData(pcb.getPriority()));
+            if (data.priority >= queueCount) {
+                data.priority = queueCount - 1; // limit process priority
+            }
+        } else if (pcb.getPreviousState() == ProcessState.BLOCKED) {
             if (data.priority > 0) {
-                data.priority--;
+                data.priority--; // increase process priority
             }
-		} else {
-            if (data.priority < numberOfQueues - 1) {
-                data.priority++;
+        } else {
+            if (data.priority < queueCount - 1) {
+                data.priority++; // decrease process priority
             }
-		}
-		queues[data.priority].offer(pcb);
-		pcb.setTimeslice(timeslices[data.priority]);
-//		System.out.println("PUT " + data.priority + ": " + pcb.getId());
-	}
+        }
+        queues[data.priority].offer(pcb);
+//        System.out.println("PUT " + data.priority + ": " + pcb.getId());
+    }
 }

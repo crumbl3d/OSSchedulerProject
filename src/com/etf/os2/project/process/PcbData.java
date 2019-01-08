@@ -1,5 +1,6 @@
 package com.etf.os2.project.process;
 
 public class PcbData {
-	//TODO: Add implementation
+    // For each scheduler there is a class extending
+    // this one used only by the scheduler!
 }

@@ -10,81 +10,57 @@ import com.etf.os2.project.process.Pcb.ProcessState;
 
 public class SJFScheduler extends Scheduler {
 
-	private class SJFData extends PcbData {
+    private class SJFData extends PcbData {
 
-		private double prediction;
-		private double startTime;
+        double prediction;
+        double startTime;
 
-		SJFData(double prediction) {
-			this.prediction = prediction;
-		}
-
-		double getPrediction() {
-			return prediction;
-		}
-
-		void setPrediction(double prediction) {
-			this.prediction = prediction;
-		}
-		
-		void setStartTime() {
-			this.startTime = Pcb.getCurrentTime();
-		}
-		
-		double getCurrentExecutionTime() {
-			return Pcb.getCurrentTime() - startTime;
-		}
-	}
-	
-	private double alpha;
-	private boolean preemption;
-	private Queue<Pcb> queue;
-	
-	SJFScheduler(double alpha, boolean preemption) {
-		if (alpha < 0) alpha = 0;
-		if (alpha > 1) alpha = 1;
-		this.alpha = alpha;
-		this.preemption = preemption;
-		queue = new PriorityQueue<>(Comparator.comparingDouble(x -> ((SJFData) x.getPcbData()).getPrediction()));
-	}
-
-	@Override
-	public Pcb get(int cpuId) {
-		Pcb nextPcb = queue.poll();
-		double prediction = 0;
-        if (nextPcb == null) {
-            nextPcb = Pcb.IDLE;
-        } else {
-            SJFData data = (SJFData) nextPcb.getPcbData();
-            data.setStartTime();
-            prediction = data.prediction;
+        SJFData(double prediction) {
+            this.prediction = prediction;
         }
-        System.out.println("GET CPU" + cpuId + " prediction = " + prediction + ": " + nextPcb.getId());
-		return nextPcb;
-	}
 
-	@Override
-	public void put(Pcb pcb) {
-		ProcessState prevState = pcb.getPreviousState();
-		SJFData data = (SJFData) pcb.getPcbData();
-		
-		long executionTime = pcb.getExecutionTime();
-		double prediction = 10 * pcb.getPriority();
-		
-		if (prevState == ProcessState.CREATED) {
-			pcb.setPcbData(data = new SJFData(prediction));
-		} else {
-			prediction = data.getPrediction();
-		}
+        double getCurrentExecutionTime() {
+            return Pcb.getCurrentTime() - startTime;
+        }
+    }
 
-		prediction = alpha * executionTime + (1 - alpha) * prediction;
-		data.setPrediction(prediction);
-		
-		queue.offer(pcb);
-		pcb.setTimeslice(0);
+    private static final double MULTIPLIER = 10;
 
-        System.out.println("PUT prediction = " + prediction + ": " + pcb.getId());
-		
+    private double alpha;
+    private boolean preemption;
+    private Queue<Pcb> queue;
+
+    SJFScheduler(double alpha, boolean preemption) {
+        if (alpha < 0) alpha = 0;
+        if (alpha > 1) alpha = 1;
+        this.alpha = alpha;
+        this.preemption = preemption;
+        queue = new PriorityQueue<>(Comparator.comparingDouble(x -> ((SJFData) x.getPcbData()).prediction));
+    }
+
+    @Override
+    public Pcb get(int cpuId) {
+        Pcb pcb = queue.poll();
+        if (pcb != null) {
+            SJFData data = (SJFData) pcb.getPcbData();
+            data.startTime = Pcb.getCurrentTime();
+            pcb.setTimeslice(0);
+//            System.out.println("GET CPU" + cpuId + " prediction = " + data.prediction + ": " + pcb.getId());
+//        } else {
+//            System.out.println("GET CPU" + cpuId + ": IDLE");
+        }
+        return pcb;
+    }
+
+    @Override
+    public void put(Pcb pcb) {
+        ProcessState prevState = pcb.getPreviousState();
+        SJFData data = (SJFData) pcb.getPcbData();
+        if (prevState == ProcessState.CREATED) {
+            pcb.setPcbData(data = new SJFData(pcb.getPriority() * MULTIPLIER));
+        }
+        data.prediction = alpha * pcb.getExecutionTime() + (1 - alpha) * data.prediction;
+        queue.offer(pcb);
         if (preemption) {
             double maxRemaining = Double.MIN_VALUE;
             int preemptCpu = -1;
@@ -99,8 +75,9 @@ public class SJFScheduler extends Scheduler {
             }
             if (preemptCpu > -1) {
                 Pcb.RUNNING[preemptCpu].preempt();
-                System.out.println("Preempting CPU" + preemptCpu + "!");
+//                System.out.print("Preempting CPU" + preemptCpu + "! ");
             }
         }
+//        System.out.println("PUT prediction = " + data.prediction + ": " + pcb.getId());
     }
 }

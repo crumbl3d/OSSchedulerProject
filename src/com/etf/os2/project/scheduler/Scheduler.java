@@ -8,32 +8,57 @@ public abstract class Scheduler {
     public abstract void put(Pcb pcb);
 
     public static Scheduler createScheduler(String[] args) {
-        if (args.length == 0)
-            return null;
-        switch (args[0]) {
-        case "sjf":
-            double alpha = 0.5;
-            boolean preemption = true;
-            if (args.length > 1)
-                alpha = Double.parseDouble(args[1]);
-            if (args.length > 2)
-                preemption = Boolean.parseBoolean(args[2]);
-            return new SJFScheduler(alpha, preemption);
-        case "mfqs":
-            if (args.length < 3)
-                return null;
-            int numberOfQueues = Integer.parseInt(args[1]);
-            if (args.length - 2 < numberOfQueues)
-                return null;
-            long[] timeslices = new long[numberOfQueues];
-            for (int i = 0; i < numberOfQueues; i++) {
-                timeslices[i] = Long.parseLong(args[2 + i]);
+        if (args.length == 0) return null;
+        int parsedCount = 0;
+        String type = args[parsedCount++];
+        int cpuCount = 1;
+        if (type.equals("lbsjf") || type.equals("lbmfqs")) {
+            cpuCount = Integer.parseInt(args[parsedCount++]);
+        }
+        switch (type) {
+            case "sjf" :
+            case "lbsjf" : {
+                double alpha = 0.5;
+                boolean preemption = true;
+                if (args.length > parsedCount) {
+                    alpha = Double.parseDouble(args[parsedCount++]);
+                }
+                if (args.length > parsedCount) {
+                    preemption = Boolean.parseBoolean(args[parsedCount]);
+                }
+                if (type.equals("sjf")) {
+                    return new SJFScheduler(alpha, preemption);
+                } else {
+                    return new LBSJFScheduler(cpuCount, alpha, preemption);
+                }
             }
-            return new MFQScheduler(numberOfQueues, timeslices);
-        case "cfs":
-            return new CFScheduler();
-        default:
-            return null;
+            case "mfqs" :
+            case "lbmfqs" : {
+                int queueCount = 1;
+                long[] timeslices;
+                if (args.length > parsedCount) {
+                    queueCount = Integer.parseInt(args[parsedCount++]);
+                    if (queueCount < 1 || args.length - parsedCount < queueCount) {
+                        return null;
+                    }
+                    timeslices = new long[queueCount];
+                    for (int i = 0; i < queueCount; i++) {
+                        timeslices[i] = Long.parseLong(args[parsedCount++]);
+                    }
+                } else {
+                    timeslices = new long[queueCount];
+                    for (int i = 0; i < queueCount; i++) {
+                        timeslices[i] = queueCount - i - 1;
+                    }
+                }
+                if (type.equals("mfqs")) {
+                    return new MFQScheduler(queueCount, timeslices);
+                } else {
+                    return new LBMFQScheduler(cpuCount, queueCount, timeslices);
+                }
+            }
+            case "cfs": return new CFScheduler();
+            default: return null;
         }
     }
 }

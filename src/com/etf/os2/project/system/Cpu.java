@@ -34,8 +34,8 @@ public class Cpu {
 
     private void changeContext(Scheduler scheduler, long currentTime) {
         if (!process.isIdle()) {
-            java.lang.System.out.printf("CPU%d PID%d TIME%d\n",
-                    id, Pcb.RUNNING[id].getId(), currentTime - lastActivationTime);
+            java.lang.System.out.printf("CPU%d PID%d TIMESLICE%d TIME%d\n",
+                    id, Pcb.RUNNING[id].getId(), Pcb.RUNNING[id].getTimeslice(), currentTime - lastActivationTime);
             process.saveContext(scheduler, id, currentTime - lastActivationTime);
         }
 

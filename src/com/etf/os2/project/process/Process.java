@@ -202,14 +202,6 @@ public class Process {
     }
 
     public void saveContext(Scheduler scheduler, int cpuId, long timeExecuted) {
-        if (pcb.getAffinity() != cpuId) {
-            long cacheMissTime = Math.round(timeExecuted * (GENERATOR.nextDouble() / 5));
-            if (cacheMissTime < 1) {
-                cacheMissTime = 1;
-            }
-            currentRequest.time += cacheMissTime;
-        }
-
         stats.processLostCpu(getCurrentTime());
         pcb.setPreviousState(Pcb.ProcessState.RUNNING);
         pcb.setExecutionTime(timeExecuted);
@@ -252,6 +244,17 @@ public class Process {
         long executionTime = (currentRequest.time > pcb.getTimeslice() && pcb.getTimeslice() != 0) ?
                 pcb.getTimeslice() : currentRequest.time;
         assert (executionTime > 0);
+
+        if (pcb.getAffinity() != cpuId) {
+            long cacheMissTime = Math.round(executionTime * (GENERATOR.nextDouble() / 5));
+            if (cacheMissTime < 1) {
+                cacheMissTime = 1;
+            }
+            currentRequest.time += cacheMissTime;
+            if (pcb.getTimeslice() == 0 || executionTime + cacheMissTime <= pcb.getTimeslice()) {
+                executionTime += cacheMissTime;
+            }
+        }
 
         activationTime = Long.MAX_VALUE;
 

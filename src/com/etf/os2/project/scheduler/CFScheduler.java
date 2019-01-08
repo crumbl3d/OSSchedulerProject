@@ -9,63 +9,51 @@ import java.util.Queue;
 
 public class CFScheduler extends Scheduler {
 
-	private class CFSData extends PcbData {
+    private class CFSData extends PcbData {
 
-		private long entryTime;
+        long entryTime;
 
-		CFSData() {
-			this.entryTime = Pcb.getCurrentTime();
-		}
+        CFSData() {
+            this.entryTime = Pcb.getCurrentTime();
+        }
 
-		double getEntryTime() { return entryTime; }
+        long getWaitTime() {
+            return Pcb.getCurrentTime() - entryTime;
+        }
+    }
 
-		void setEntryTime(long entryTime) { this.entryTime = entryTime; }
+    private Queue<Pcb> queue;
 
-		long getWaitTime() {
-			return Pcb.getCurrentTime() - entryTime;
-		}
-	}
+    CFScheduler() {
+        queue = new PriorityQueue<>(Comparator.comparingDouble(Pcb::getExecutionTime));
+    }
 
-	private Queue<Pcb> queue;
+    @Override
+    public Pcb get(int cpuId) {
+        Pcb pcb = queue.poll();
+        if (pcb != null) {
+            CFSData data = (CFSData) pcb.getPcbData();
+            long timeslice = 0;
+            if (Pcb.getProcessCount() > 0) {
+                timeslice = (data.getWaitTime() + Pcb.getProcessCount() - 1) / Pcb.getProcessCount();
+            }
+            pcb.setTimeslice(timeslice);
+//            System.out.println("GET CPU" + cpuId + " timeslice = " + pcb.getTimeslice() + ": " + pcb.getId());
+//        } else {
+//            System.out.println("GET CPU" + cpuId + ": IDLE");
+        }
+        return pcb;
+    }
 
-	CFScheduler() {
-		queue = new PriorityQueue<>(Comparator.comparingDouble(Pcb::getExecutionTime));
-	}
-
-	@Override
-	public Pcb get(int cpuId) {
-		Pcb nextPcb = queue.poll();
-		long timeslice = 0;
-		if (nextPcb == null) {
-			nextPcb = Pcb.IDLE;
-		} else {
-			CFSData data = (CFSData) nextPcb.getPcbData();
-			if (Pcb.getProcessCount() == 0) {
-				timeslice = 0; // this should never happen!!!
-			} else {
-				int processCount = Pcb.getProcessCount();
-				timeslice = (data.getWaitTime() + processCount - 1) / processCount; // ceil...
-			}
-		}
-		System.out.println("GET CPU" + cpuId + " timeslice = " + timeslice + ": " + nextPcb.getId());
-		nextPcb.setTimeslice(timeslice);
-		return nextPcb;
-	}
-
-	@Override
-	public void put(Pcb pcb) {
-		Pcb.ProcessState prevState = pcb.getPreviousState();
-		CFSData data = (CFSData) pcb.getPcbData();
-
-		if (prevState == Pcb.ProcessState.CREATED) {
-			pcb.setPcbData(data = new CFSData()); // automatically sets entryTime
-		} else {
-			data.setEntryTime(Pcb.getCurrentTime());
-		}
-
-		queue.offer(pcb);
-		pcb.setTimeslice(0);
-
-		System.out.println("PUT entryTime = " + data.getEntryTime() + ": " + pcb.getId());
-	}
+    @Override
+    public void put(Pcb pcb) {
+        CFSData data = (CFSData) pcb.getPcbData();
+        if (pcb.getPreviousState() == Pcb.ProcessState.CREATED) {
+            pcb.setPcbData(new CFSData()); // automatically sets entryTime...
+        } else {
+            data.entryTime = Pcb.getCurrentTime();
+        }
+        queue.offer(pcb);
+//        System.out.println("PUT entryTime = " + data.getEntryTime() + ": " + pcb.getId());
+    }
 }
