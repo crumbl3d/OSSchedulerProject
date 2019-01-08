@@ -29,7 +29,7 @@ public abstract class Scheduler {
                 if (type.equals("sjf")) {
                     return new SJFScheduler(alpha, preemption);
                 } else {
-                    return new LBScheduler(type, cpuCount, alpha, preemption);
+                    return LBScheduler.createSJF(cpuCount, alpha, preemption);
                 }
             }
             case "mfqs" :
@@ -54,11 +54,11 @@ public abstract class Scheduler {
                 if (type.equals("mfqs")) {
                     return new MFQScheduler(queueCount, timeslices);
                 } else {
-                    return new LBScheduler(type, cpuCount, queueCount, timeslices);
+                    return LBScheduler.createMFQS(cpuCount, queueCount, timeslices);
                 }
             }
             case "cfs": return new CFScheduler();
-            case "lbcfs": return new LBScheduler(type, cpuCount);
+            case "lbcfs": return LBScheduler.createCFS(cpuCount);
             default: return null;
         }
     }

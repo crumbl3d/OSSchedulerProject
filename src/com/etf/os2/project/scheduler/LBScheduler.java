@@ -13,28 +13,28 @@ public class LBScheduler extends Scheduler {
         queues = new CountingScheduler[cpuCount];
     }
 
-    LBScheduler(String type, int cpuCount, double alpha, boolean preemption) {
-        this(cpuCount);
-        if (!type.equals("lbsjf")) return;
+    static LBScheduler createSJF(int cpuCount, double alpha, boolean preemption) {
+        LBScheduler scheduler = new LBScheduler(cpuCount);
         for (int i = 0; i < cpuCount; i++) {
-            queues[i] = new SJFScheduler(alpha, preemption);
+            scheduler.queues[i] = new SJFScheduler(alpha, preemption);
         }
+        return scheduler;
     }
 
-    LBScheduler(String type, int cpuCount, int queueCount, long[] timeslices) {
-        this(cpuCount);
-        if (!type.equals("lbmfqs")) return;
+    static LBScheduler createMFQS(int cpuCount, int queueCount, long[] timeslices) {
+        LBScheduler scheduler = new LBScheduler(cpuCount);
         for (int i = 0; i < cpuCount; i++) {
-            queues[i] = new MFQScheduler(queueCount, timeslices);
+            scheduler.queues[i] = new MFQScheduler(queueCount, timeslices);
         }
+        return scheduler;
     }
 
-    LBScheduler(String type, int cpuCount) {
-        this(cpuCount);
-        if (!type.equals("lbcfs")) return;
-        for (int i = 0; i < cpuCount; i++) {
-            queues[i] = new CFScheduler();
+    static LBScheduler createCFS(int cpuCount) {
+        LBScheduler scheduler = new LBScheduler(cpuCount);
+        for (int i = 0; i < scheduler.cpuCount; i++) {
+            scheduler.queues[i] = new CFScheduler();
         }
+        return scheduler;
     }
 
     @Override
