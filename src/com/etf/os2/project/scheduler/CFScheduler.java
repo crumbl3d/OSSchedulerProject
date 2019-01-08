@@ -29,7 +29,7 @@ public class CFScheduler extends Scheduler {
     }
 
     @Override
-    public Pcb get(int cpuId) {
+    public synchronized Pcb get(int cpuId) {
         Pcb pcb = queue.poll();
         if (pcb != null) {
             CFSData data = (CFSData) pcb.getPcbData();
@@ -46,7 +46,7 @@ public class CFScheduler extends Scheduler {
     }
 
     @Override
-    public void put(Pcb pcb) {
+    public synchronized void put(Pcb pcb) {
         CFSData data = (CFSData) pcb.getPcbData();
         if (pcb.getPreviousState() == Pcb.ProcessState.CREATED) {
             pcb.setPcbData(new CFSData()); // automatically sets entryTime...

@@ -9,12 +9,12 @@ public class LBSJFScheduler extends Scheduler {
     }
 
     @Override
-    public Pcb get(int cpuId) {
+    public synchronized Pcb get(int cpuId) {
         return null;
     }
 
     @Override
-    public void put(Pcb pcb) {
+    public synchronized void put(Pcb pcb) {
 
     }
 }

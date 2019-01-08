@@ -31,7 +31,7 @@ public class MFQScheduler extends Scheduler {
     }
 
     @Override
-    public Pcb get(int cpuId) {
+    public synchronized Pcb get(int cpuId) {
         Pcb pcb = null;
         for (Queue<Pcb> queue : queues) {
             pcb = queue.poll();
@@ -48,7 +48,7 @@ public class MFQScheduler extends Scheduler {
     }
 
     @Override
-    public void put(Pcb pcb) {
+    public synchronized void put(Pcb pcb) {
         MFQSData data = (MFQSData) pcb.getPcbData();
         if (pcb.getPreviousState() == ProcessState.CREATED) {
             pcb.setPcbData(data = new MFQSData(pcb.getPriority()));

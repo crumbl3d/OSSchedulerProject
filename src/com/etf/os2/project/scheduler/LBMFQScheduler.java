@@ -9,14 +9,14 @@ import java.util.Queue;
 
 public class LBMFQScheduler extends Scheduler {
 
-    private class MFQSData extends PcbData {
+    private class LBMFQSData extends PcbData {
 
         int priority;
 
-        MFQSData(int priority) { this.priority = priority; }
+        LBMFQSData(int priority) { this.priority = priority; }
     }
 
-    private class CPUQueue {
+    private class LBMFQSQueue {
 
         private int queueCount;
         private int processCount = 0;
@@ -24,7 +24,7 @@ public class LBMFQScheduler extends Scheduler {
         private Queue<Pcb>[] queues;
 
         @SuppressWarnings("unchecked")
-        CPUQueue(int queueCount, long[] timeslices) {
+        LBMFQSQueue(int queueCount, long[] timeslices) {
             this.queueCount = queueCount;
             this.timeslices = timeslices;
             queues = new Queue[queueCount];
@@ -42,7 +42,7 @@ public class LBMFQScheduler extends Scheduler {
                 if (pcb != null) break;
             }
             if (pcb != null) {
-                MFQSData data = (MFQSData) pcb.getPcbData();
+                LBMFQSData data = (LBMFQSData) pcb.getPcbData();
                 pcb.setTimeslice(timeslices[data.priority]);
                 processCount--;
             }
@@ -51,9 +51,9 @@ public class LBMFQScheduler extends Scheduler {
 
         void put(Pcb pcb) {
             ProcessState prevState = pcb.getPreviousState();
-            MFQSData data = (MFQSData) pcb.getPcbData();
+            LBMFQSData data = (LBMFQSData) pcb.getPcbData();
             if (prevState == ProcessState.CREATED) {
-                pcb.setPcbData(data = new MFQSData(pcb.getPriority()));
+                pcb.setPcbData(data = new LBMFQSData(pcb.getPriority()));
                 if (data.priority >= queueCount) {
                     data.priority = queueCount - 1; // limit process priority
                 }
@@ -72,59 +72,51 @@ public class LBMFQScheduler extends Scheduler {
     }
 
     private int cpuCount;
-    private int processCount = 0;
-    private CPUQueue[] queues;
+    private LBMFQSQueue[] queues;
 
     LBMFQScheduler(int cpuCount, int queueCount, long[] timeslices) {
         this.cpuCount = cpuCount;
-        queues = new CPUQueue[cpuCount];
+        queues = new LBMFQSQueue[cpuCount];
         for (int i = 0; i < cpuCount; i++) {
-            queues[i] = new CPUQueue(queueCount, timeslices);
+            queues[i] = new LBMFQSQueue(queueCount, timeslices);
         }
     }
 
     @Override
-    public Pcb get(int cpuId) {
-        Pcb pcb = null;
-        if (queues[cpuId].processCount > 0) {
-            pcb = queues[cpuId].get();
-        } else {
-            for (CPUQueue queue : queues) {
-                if (queue.processCount > 0) {
+    public synchronized Pcb get(int cpuId) {
+        Pcb pcb = queues[cpuId].get();
+        if (pcb == null) {
+            for (LBMFQSQueue queue : queues) {
+                if (queue.getProcessCount() > 0) {
                     pcb = queue.get();
+                    break;
                 }
             }
-        }
-        if (pcb != null) {
-            processCount--;
         }
         return pcb;
     }
 
     @Override
-    public void put(Pcb pcb) {
+    public synchronized void put(Pcb pcb) {
         boolean done = false;
         if (pcb.getPreviousState() != ProcessState.CREATED) {
             int affinity = pcb.getAffinity();
-            double avgProcCount = processCount / (double) cpuCount;
-            if (queues[affinity].processCount < avgProcCount) {
+            double avgProcCount = Pcb.getProcessCount() / (double) cpuCount;
+            if (queues[affinity].getProcessCount() < avgProcCount) {
                 queues[affinity].put(pcb);
                 done = true;
             }
         }
         if (!done) {
-            CPUQueue selectedQueue = null;
+            LBMFQSQueue selectedQueue = queues[0];
             long minProcessCount = Long.MAX_VALUE;
-            for (CPUQueue queue : queues) {
+            for (LBMFQSQueue queue : queues) {
                 if (queue.getProcessCount() < minProcessCount) {
                     selectedQueue = queue;
                     minProcessCount = queue.getProcessCount();
                 }
             }
-            if (selectedQueue != null) {
-                selectedQueue.put(pcb);
-                processCount++;
-            }
+            selectedQueue.put(pcb);
         }
     }
 }

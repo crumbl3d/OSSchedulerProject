@@ -39,7 +39,7 @@ public class SJFScheduler extends Scheduler {
     }
 
     @Override
-    public Pcb get(int cpuId) {
+    public synchronized Pcb get(int cpuId) {
         Pcb pcb = queue.poll();
         if (pcb != null) {
             SJFData data = (SJFData) pcb.getPcbData();
@@ -53,7 +53,7 @@ public class SJFScheduler extends Scheduler {
     }
 
     @Override
-    public void put(Pcb pcb) {
+    public synchronized void put(Pcb pcb) {
         ProcessState prevState = pcb.getPreviousState();
         SJFData data = (SJFData) pcb.getPcbData();
         if (prevState == ProcessState.CREATED) {

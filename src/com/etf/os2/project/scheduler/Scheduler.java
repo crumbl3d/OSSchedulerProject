@@ -58,6 +58,7 @@ public abstract class Scheduler {
                 }
             }
             case "cfs": return new CFScheduler();
+            case "lbcfs": return new LBCFScheduler(cpuCount);
             default: return null;
         }
     }
