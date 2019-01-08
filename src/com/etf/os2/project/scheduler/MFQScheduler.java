@@ -7,7 +7,7 @@ import com.etf.os2.project.process.PcbData;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class MFQScheduler extends Scheduler {
+public class MFQScheduler extends CountingScheduler {
 
     private class MFQSData extends PcbData {
 
@@ -40,6 +40,7 @@ public class MFQScheduler extends Scheduler {
         if (pcb != null) {
             MFQSData data = (MFQSData) pcb.getPcbData();
             pcb.setTimeslice(timeslices[data.priority]);
+            processCount--;
 //            System.out.println("GET CPU" + cpuId + " timeslice = " + pcb.getTimeslice() + ": " + pcb.getId());
 //        } else {
 //            System.out.println("GET CPU" + cpuId + ": IDLE");
@@ -65,6 +66,7 @@ public class MFQScheduler extends Scheduler {
             }
         }
         queues[data.priority].offer(pcb);
+        processCount++;
 //        System.out.println("PUT " + data.priority + ": " + pcb.getId());
     }
 }

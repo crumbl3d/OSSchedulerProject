@@ -12,7 +12,7 @@ public abstract class Scheduler {
         int parsedCount = 0;
         String type = args[parsedCount++];
         int cpuCount = 1;
-        if (type.equals("lbsjf") || type.equals("lbmfqs")) {
+        if (type.startsWith("lb")) {
             cpuCount = Integer.parseInt(args[parsedCount++]);
         }
         switch (type) {
@@ -29,7 +29,7 @@ public abstract class Scheduler {
                 if (type.equals("sjf")) {
                     return new SJFScheduler(alpha, preemption);
                 } else {
-                    return new LBSJFScheduler(cpuCount, alpha, preemption);
+                    return new LBScheduler(type, cpuCount, alpha, preemption);
                 }
             }
             case "mfqs" :
@@ -54,11 +54,11 @@ public abstract class Scheduler {
                 if (type.equals("mfqs")) {
                     return new MFQScheduler(queueCount, timeslices);
                 } else {
-                    return new LBMFQScheduler(cpuCount, queueCount, timeslices);
+                    return new LBScheduler(type, cpuCount, queueCount, timeslices);
                 }
             }
             case "cfs": return new CFScheduler();
-            case "lbcfs": return new LBCFScheduler(cpuCount);
+            case "lbcfs": return new LBScheduler(type, cpuCount);
             default: return null;
         }
     }

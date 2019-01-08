@@ -8,23 +8,20 @@ import com.etf.os2.project.process.Pcb;
 import com.etf.os2.project.process.PcbData;
 import com.etf.os2.project.process.Pcb.ProcessState;
 
-public class SJFScheduler extends Scheduler {
+public class SJFScheduler extends CountingScheduler {
 
     private class SJFData extends PcbData {
 
         double prediction;
         double startTime;
 
-        SJFData(double prediction) {
-            this.prediction = prediction;
-        }
+        SJFData(double prediction) { this.prediction = prediction; }
 
-        double getCurrentExecutionTime() {
-            return Pcb.getCurrentTime() - startTime;
-        }
+        double getCurrentExecutionTime() { return Pcb.getCurrentTime() - startTime; }
     }
 
-    private static final double MULTIPLIER = 10;
+    private static final double MULTIPLIER = 30;
+    private static final double OFFSET = 50;
 
     private double alpha;
     private boolean preemption;
@@ -45,6 +42,7 @@ public class SJFScheduler extends Scheduler {
             SJFData data = (SJFData) pcb.getPcbData();
             data.startTime = Pcb.getCurrentTime();
             pcb.setTimeslice(0);
+            processCount--;
 //            System.out.println("GET CPU" + cpuId + " prediction = " + data.prediction + ": " + pcb.getId());
 //        } else {
 //            System.out.println("GET CPU" + cpuId + ": IDLE");
@@ -57,25 +55,23 @@ public class SJFScheduler extends Scheduler {
         ProcessState prevState = pcb.getPreviousState();
         SJFData data = (SJFData) pcb.getPcbData();
         if (prevState == ProcessState.CREATED) {
-            pcb.setPcbData(data = new SJFData(pcb.getPriority() * MULTIPLIER));
+            pcb.setPcbData(data = new SJFData(pcb.getPriority() * MULTIPLIER + OFFSET));
         }
         data.prediction = alpha * pcb.getExecutionTime() + (1 - alpha) * data.prediction;
         queue.offer(pcb);
+        processCount++;
         if (preemption) {
-            double maxRemaining = Double.MIN_VALUE;
-            int preemptCpu = -1;
-            for (int i = 0; i < Pcb.RUNNING.length; i++) {
-                if (Pcb.RUNNING[i] == Pcb.IDLE) continue;
-                SJFData tempData = (SJFData) Pcb.RUNNING[i].getPcbData();
-                double timeLeft = tempData.prediction - tempData.getCurrentExecutionTime();
-                if (timeLeft > maxRemaining) {
-                    maxRemaining = timeLeft;
-                    preemptCpu = i;
+            Pcb nextPcb = queue.peek();
+            if (nextPcb != null) {
+                Pcb runningPcb = Pcb.RUNNING[nextPcb.getAffinity()];
+                if (runningPcb != null && runningPcb != Pcb.IDLE) {
+                    SJFData runningData = (SJFData) runningPcb.getPcbData();
+                    double timeLeft = runningData.prediction - runningData.getCurrentExecutionTime();
+                    if (timeLeft < 0 || data.prediction < timeLeft) {
+                        runningPcb.preempt();
+//                        System.out.print("Preempting CPU" + nextPcb.getAffinity() + "! ");
+                    }
                 }
-            }
-            if (preemptCpu > -1) {
-                Pcb.RUNNING[preemptCpu].preempt();
-//                System.out.print("Preempting CPU" + preemptCpu + "! ");
             }
         }
 //        System.out.println("PUT prediction = " + data.prediction + ": " + pcb.getId());
