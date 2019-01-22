@@ -3,7 +3,7 @@ package com.etf.os2.project.scheduler;
 import com.etf.os2.project.process.Pcb;
 import com.etf.os2.project.process.Pcb.ProcessState;
 
-public class LBScheduler extends Scheduler {
+public class LBScheduler extends CountingScheduler {
 
     private int cpuCount;
     private CountingScheduler[] queues;
@@ -48,6 +48,9 @@ public class LBScheduler extends Scheduler {
                 }
             }
         }
+        if (pcb != null) {
+            processCount--;
+        }
         return pcb;
     }
 
@@ -56,7 +59,8 @@ public class LBScheduler extends Scheduler {
         boolean done = false;
         if (pcb.getPreviousState() != ProcessState.CREATED) {
             int affinity = pcb.getAffinity();
-            double avgProcCount = Pcb.getProcessCount() / (double) cpuCount;
+//            double avgProcCount = Pcb.getProcessCount() / (double) cpuCount;
+            double avgProcCount = processCount / (double) cpuCount;
             if (queues[affinity].getProcessCount() < avgProcCount) {
                 queues[affinity].put(pcb);
                 done = true;
@@ -73,5 +77,6 @@ public class LBScheduler extends Scheduler {
             }
             selectedQueue.put(pcb);
         }
+        processCount++;
     }
 }

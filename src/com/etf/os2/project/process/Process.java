@@ -245,17 +245,6 @@ public class Process {
                 pcb.getTimeslice() : currentRequest.time;
         assert (executionTime > 0);
 
-        if (pcb.getAffinity() != cpuId) {
-            long cacheMissTime = Math.round(executionTime * (GENERATOR.nextDouble() / 5));
-            if (cacheMissTime < 1 && !(executionTime == 1 && pcb.getTimeslice() == 1)) {
-                cacheMissTime = 1;
-            }
-            currentRequest.time += cacheMissTime;
-            if (pcb.getTimeslice() == 0 || executionTime + cacheMissTime <= pcb.getTimeslice()) {
-                executionTime += cacheMissTime;
-            }
-        }
-
         activationTime = Long.MAX_VALUE;
 
         return executionTime;

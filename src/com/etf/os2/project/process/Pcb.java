@@ -41,9 +41,13 @@ public class Pcb {
         return timeslice;
     }
 
-    public void setTimeslice(long timeslice) { this.timeslice = timeslice; }
+    public void setTimeslice(long timeslice) {
+        this.timeslice = timeslice;
+    }
 
-    public long getExecutionTime() { return executionTime; }
+    public long getExecutionTime() {
+        return executionTime;
+    }
 
     public void setExecutionTime(long executionTime) {
         this.executionTime = executionTime;
@@ -73,7 +77,9 @@ public class Pcb {
         this.preempt = preempt;
     }
 
-    public int getAffinity() { return affinity; }
+    public int getAffinity() {
+        return affinity;
+    }
 
     public void setAffinity(int affinity) {
         this.affinity = affinity;
